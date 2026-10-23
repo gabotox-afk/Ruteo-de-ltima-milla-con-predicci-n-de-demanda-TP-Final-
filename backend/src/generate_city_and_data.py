@@ -1,14 +1,3 @@
-"""
-generate_city_and_data.py
--------------------------
-Script pedagógico para generar:
-1. La red vial de la ciudad (Grafo Dirigido con coordenadas geográficas).
-2. El dataset histórico de viajes para entrenar modelos de regresión.
-
-Cumple con las consignas del Trabajo Práctico de Lógica y Teoría de Grafos:
-"Ruteo de última milla con predicción de demanda"
-"""
-
 import json
 from pathlib import Path
 import numpy as np
