@@ -1,0 +1,371 @@
+{
+  "metadata": {
+    "descripcion": "Red vial sintética para ruteo de última milla",
+    "total_nodos": 16,
+    "total_tramos": 33
+  },
+  "nodos": [
+    {
+      "id": "N_0_0",
+      "lat": -34.585,
+      "lon": -58.435,
+      "label": "Esquina (0,0)"
+    },
+    {
+      "id": "N_0_1",
+      "lat": -34.585,
+      "lon": -58.4315,
+      "label": "Esquina (0,1)"
+    },
+    {
+      "id": "N_0_2",
+      "lat": -34.585,
+      "lon": -58.428,
+      "label": "Esquina (0,2)"
+    },
+    {
+      "id": "N_0_3",
+      "lat": -34.585,
+      "lon": -58.4245,
+      "label": "Esquina (0,3)"
+    },
+    {
+      "id": "N_1_0",
+      "lat": -34.588,
+      "lon": -58.435,
+      "label": "Esquina (1,0)"
+    },
+    {
+      "id": "N_1_1",
+      "lat": -34.588,
+      "lon": -58.4315,
+      "label": "Esquina (1,1)"
+    },
+    {
+      "id": "N_1_2",
+      "lat": -34.588,
+      "lon": -58.428,
+      "label": "Esquina (1,2)"
+    },
+    {
+      "id": "N_1_3",
+      "lat": -34.588,
+      "lon": -58.4245,
+      "label": "Esquina (1,3)"
+    },
+    {
+      "id": "N_2_0",
+      "lat": -34.591,
+      "lon": -58.435,
+      "label": "Esquina (2,0)"
+    },
+    {
+      "id": "N_2_1",
+      "lat": -34.591,
+      "lon": -58.4315,
+      "label": "Esquina (2,1)"
+    },
+    {
+      "id": "N_2_2",
+      "lat": -34.591,
+      "lon": -58.428,
+      "label": "Esquina (2,2)"
+    },
+    {
+      "id": "N_2_3",
+      "lat": -34.591,
+      "lon": -58.4245,
+      "label": "Esquina (2,3)"
+    },
+    {
+      "id": "N_3_0",
+      "lat": -34.594,
+      "lon": -58.435,
+      "label": "Esquina (3,0)"
+    },
+    {
+      "id": "N_3_1",
+      "lat": -34.594,
+      "lon": -58.4315,
+      "label": "Esquina (3,1)"
+    },
+    {
+      "id": "N_3_2",
+      "lat": -34.594,
+      "lon": -58.428,
+      "label": "Esquina (3,2)"
+    },
+    {
+      "id": "N_3_3",
+      "lat": -34.594,
+      "lon": -58.4245,
+      "label": "Esquina (3,3)"
+    }
+  ],
+  "aristas": [
+    {
+      "tramo_id": "T_001",
+      "origen": "N_0_0",
+      "destino": "N_0_1",
+      "distancia_metros": 350,
+      "tipo": "calle",
+      "velocidad_base_kmh": 30
+    },
+    {
+      "tramo_id": "T_002",
+      "origen": "N_0_0",
+      "destino": "N_1_0",
+      "distancia_metros": 330,
+      "tipo": "calle",
+      "velocidad_base_kmh": 25
+    },
+    {
+      "tramo_id": "T_003",
+      "origen": "N_0_1",
+      "destino": "N_0_2",
+      "distancia_metros": 350,
+      "tipo": "calle",
+      "velocidad_base_kmh": 30
+    },
+    {
+      "tramo_id": "T_004",
+      "origen": "N_0_1",
+      "destino": "N_1_1",
+      "distancia_metros": 330,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 45
+    },
+    {
+      "tramo_id": "T_005",
+      "origen": "N_1_1",
+      "destino": "N_0_1",
+      "distancia_metros": 330,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 45
+    },
+    {
+      "tramo_id": "T_006",
+      "origen": "N_0_2",
+      "destino": "N_0_3",
+      "distancia_metros": 350,
+      "tipo": "calle",
+      "velocidad_base_kmh": 30
+    },
+    {
+      "tramo_id": "T_007",
+      "origen": "N_0_2",
+      "destino": "N_1_2",
+      "distancia_metros": 330,
+      "tipo": "calle",
+      "velocidad_base_kmh": 25
+    },
+    {
+      "tramo_id": "T_008",
+      "origen": "N_0_3",
+      "destino": "N_1_3",
+      "distancia_metros": 330,
+      "tipo": "calle",
+      "velocidad_base_kmh": 25
+    },
+    {
+      "tramo_id": "T_009",
+      "origen": "N_1_0",
+      "destino": "N_1_1",
+      "distancia_metros": 350,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 50
+    },
+    {
+      "tramo_id": "T_010",
+      "origen": "N_1_1",
+      "destino": "N_1_0",
+      "distancia_metros": 350,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 50
+    },
+    {
+      "tramo_id": "T_011",
+      "origen": "N_1_0",
+      "destino": "N_2_0",
+      "distancia_metros": 330,
+      "tipo": "calle",
+      "velocidad_base_kmh": 25
+    },
+    {
+      "tramo_id": "T_012",
+      "origen": "N_1_1",
+      "destino": "N_1_2",
+      "distancia_metros": 350,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 50
+    },
+    {
+      "tramo_id": "T_013",
+      "origen": "N_1_2",
+      "destino": "N_1_1",
+      "distancia_metros": 350,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 50
+    },
+    {
+      "tramo_id": "T_014",
+      "origen": "N_1_1",
+      "destino": "N_2_1",
+      "distancia_metros": 330,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 45
+    },
+    {
+      "tramo_id": "T_015",
+      "origen": "N_2_1",
+      "destino": "N_1_1",
+      "distancia_metros": 330,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 45
+    },
+    {
+      "tramo_id": "T_016",
+      "origen": "N_1_2",
+      "destino": "N_1_3",
+      "distancia_metros": 350,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 50
+    },
+    {
+      "tramo_id": "T_017",
+      "origen": "N_1_3",
+      "destino": "N_1_2",
+      "distancia_metros": 350,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 50
+    },
+    {
+      "tramo_id": "T_018",
+      "origen": "N_1_2",
+      "destino": "N_2_2",
+      "distancia_metros": 330,
+      "tipo": "calle",
+      "velocidad_base_kmh": 25
+    },
+    {
+      "tramo_id": "T_019",
+      "origen": "N_1_3",
+      "destino": "N_2_3",
+      "distancia_metros": 330,
+      "tipo": "calle",
+      "velocidad_base_kmh": 25
+    },
+    {
+      "tramo_id": "T_020",
+      "origen": "N_2_0",
+      "destino": "N_2_1",
+      "distancia_metros": 350,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 50
+    },
+    {
+      "tramo_id": "T_021",
+      "origen": "N_2_1",
+      "destino": "N_2_0",
+      "distancia_metros": 350,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 50
+    },
+    {
+      "tramo_id": "T_022",
+      "origen": "N_2_0",
+      "destino": "N_3_0",
+      "distancia_metros": 330,
+      "tipo": "calle",
+      "velocidad_base_kmh": 25
+    },
+    {
+      "tramo_id": "T_023",
+      "origen": "N_2_1",
+      "destino": "N_2_2",
+      "distancia_metros": 350,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 50
+    },
+    {
+      "tramo_id": "T_024",
+      "origen": "N_2_2",
+      "destino": "N_2_1",
+      "distancia_metros": 350,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 50
+    },
+    {
+      "tramo_id": "T_025",
+      "origen": "N_2_1",
+      "destino": "N_3_1",
+      "distancia_metros": 330,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 45
+    },
+    {
+      "tramo_id": "T_026",
+      "origen": "N_3_1",
+      "destino": "N_2_1",
+      "distancia_metros": 330,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 45
+    },
+    {
+      "tramo_id": "T_027",
+      "origen": "N_2_2",
+      "destino": "N_2_3",
+      "distancia_metros": 350,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 50
+    },
+    {
+      "tramo_id": "T_028",
+      "origen": "N_2_3",
+      "destino": "N_2_2",
+      "distancia_metros": 350,
+      "tipo": "avenida",
+      "velocidad_base_kmh": 50
+    },
+    {
+      "tramo_id": "T_029",
+      "origen": "N_2_2",
+      "destino": "N_3_2",
+      "distancia_metros": 330,
+      "tipo": "calle",
+      "velocidad_base_kmh": 25
+    },
+    {
+      "tramo_id": "T_030",
+      "origen": "N_2_3",
+      "destino": "N_3_3",
+      "distancia_metros": 330,
+      "tipo": "calle",
+      "velocidad_base_kmh": 25
+    },
+    {
+      "tramo_id": "T_031",
+      "origen": "N_3_0",
+      "destino": "N_3_1",
+      "distancia_metros": 350,
+      "tipo": "calle",
+      "velocidad_base_kmh": 30
+    },
+    {
+      "tramo_id": "T_032",
+      "origen": "N_3_1",
+      "destino": "N_3_2",
+      "distancia_metros": 350,
+      "tipo": "calle",
+      "velocidad_base_kmh": 30
+    },
+    {
+      "tramo_id": "T_033",
+      "origen": "N_3_2",
+      "destino": "N_3_3",
+      "distancia_metros": 350,
+      "tipo": "calle",
+      "velocidad_base_kmh": 30
+    }
+  ]
+}
