@@ -8,7 +8,7 @@ GRAPH_PATH = DATA_DIR / "city_graph.json"
 
 class CityGraphRouter:
     def __init__(self):
-        # hacemos que el grafo sea dirigido por como funcional las calles
+        # hacemos que el grafo sea dirigido por como funcionan las calles
         self.graph = nx.DiGraph()
         self.nodes_info = {}
         self.edges_info = {}
@@ -46,5 +46,49 @@ class CityGraphRouter:
             )
         print(f"[OK] Grafo cargado: {self.graph.number_of_nodes()} esquinas y {self.graph.number_of_edges()} tramos de calle.")
 
+
+    def calcular_ruta_dijkstra(self, origen: str, destino: str, criterio_peso: str = "distancia_metros"):
+        try: 
+            camino_nodos= nx.dijkstra_path(self.graph, origen, destino, weight = criterio_peso) 
+        except nx.NetworkXNoPath :
+            print (f"[AVISO] no existe camino entre {origen} y {destino}")
+            return None
+        tramos_recorridos = []
+        distancia_total = 0.0
+        tiempo_total = 0.0
+
+        for i in range(len(camino_nodos) - 1):
+            nodo_actual = camino_nodos[i]
+            nodo_siguiente = camino_nodos[i + 1]
+            datos_arista = self.graph[nodo_actual][nodo_siguiente]
+            distancia_total += datos_arista["distancia_metros"]
+            tiempo_total += datos_arista["tiempo_segundos"]
+            tramos_recorridos.append({
+                "tramo_id": datos_arista["tramo_id"],
+                "desde": nodo_actual,
+                "hasta": nodo_siguiente,
+                "tipo": datos_arista["tipo"],
+                "distancia": datos_arista["distancia_metros"],
+                "tiempo": round(datos_arista["tiempo_segundos"], 1)
+            })
+
+        return {
+            "criterio": criterio_peso,
+            "camino_nodos": camino_nodos,
+            "total_metros": round(distancia_total, 1),
+            "total_segundos": round(tiempo_total, 1),
+            "total_minutos": round(tiempo_total / 60, 2),
+            "detalle_tramos": tramos_recorridos
+        }
+
+
+
+
 if __name__ == "__main__":
     router = CityGraphRouter()
+
+    resultado = router.calcular_ruta_dijkstra("N_0_0", "N_3_3", criterio_peso="distancia_metros")
+    print("\n--- PRUEBA DIJKSTRA (POR DISTANCIA) ---")
+    print("Camino:", " -> ".join(resultado["camino_nodos"]))
+    print(f"Distancia total: {resultado['total_metros']} metros")
+    print(f"Tiempo base: {resultado['total_minutos']} minutos")
