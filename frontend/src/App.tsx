@@ -114,10 +114,10 @@ export const App: React.FC = () => {
 
   // Calcular automáticamente la primera ruta al cargar el grafo
   useEffect(() => {
-    if (grafo && !resultadoRuta && !loadingCalculo) {
+    if (grafo && !resultadoRuta && !loadingCalculo && !calculoError) {
       handleCalcularRuta();
     }
-  }, [grafo, handleCalcularRuta, resultadoRuta, loadingCalculo]);
+  }, [grafo, handleCalcularRuta, resultadoRuta, loadingCalculo, calculoError]);
 
   const handleSelectNodo = (nodoId: string, tipo: 'origen' | 'destino' | 'entrega') => {
     if (tipo === 'origen') {

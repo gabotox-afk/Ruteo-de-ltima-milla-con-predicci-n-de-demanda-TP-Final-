@@ -52,8 +52,8 @@ export const RouteControls: React.FC<RouteControlsProps> = ({
 
   const CLIMAS = [
     { id: 'soleado', label: 'Soleado', desc: 'Tráfico estándar' },
-    { id: 'lluvia', label: 'Lluvia', desc: '+25% congestión' },
-    { id: 'tormenta', label: 'Tormenta', desc: '+60% congestión' },
+    { id: 'lluvia', label: 'Lluvia', desc: 'Transito moderado' },
+    { id: 'tormenta', label: 'Tormenta', desc: 'Transito lento' },
   ];
 
   const getTipoHorario = (hora: number) => {

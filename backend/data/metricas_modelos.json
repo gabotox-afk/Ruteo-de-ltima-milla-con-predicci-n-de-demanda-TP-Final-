@@ -1,22 +1,22 @@
 {
   "LinearRegression": {
-    "MAE": 7.7267,
-    "RMSE": 9.862,
-    "R2": 0.6303
+    "MAE": 7.7394,
+    "RMSE": 12.0017,
+    "R2": 0.211
   },
   "DecisionTreeRegressor": {
-    "MAE": 3.9973,
-    "RMSE": 5.5487,
-    "R2": 0.883
+    "MAE": 3.7087,
+    "RMSE": 5.3099,
+    "R2": 0.8456
   },
   "KNeighborsRegressor": {
-    "MAE": 6.4157,
-    "RMSE": 9.0435,
-    "R2": 0.6891
+    "MAE": 6.7922,
+    "RMSE": 11.1527,
+    "R2": 0.3187
   },
   "RandomForestRegressor": {
-    "MAE": 3.0582,
-    "RMSE": 4.242,
-    "R2": 0.9316
+    "MAE": 2.9152,
+    "RMSE": 4.287,
+    "R2": 0.8993
   }
 }

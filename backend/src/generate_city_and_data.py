@@ -10,13 +10,18 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def build_city_graph():
+def build_city_graph(num_filas=5, num_columnas=5, paso_avenida=3):
     """
-    Crea un grafo urbano realista tipo cuadrícula (4x4 = 16 esquinas/nodos)
-    con coordenadas geográficas centradas en Buenos Aires (ej: zona Palermo / Colegiales),
-    combinando avenidas principales y calles barriales.
+    Crea un grafo urbano realista y escalable tipo cuadrícula (num_filas x num_columnas)
+    con coordenadas geográficas centradas en Buenos Aires.
+    
+    Reglas de diseño urbanístico:
+    1. Las avenidas son siempre de doble mano (<-> y ^v).
+    2. Dos calles de un sentido consecutivas nunca tienen la misma dirección.
+    3. Las dos calles a los lados de una avenida tampoco tienen la misma dirección
+       (se usa un contador exclusivo de calles de mano única que no avanza en las avenidas).
     """
-    # Coordenadas base
+    # Coordenadas base (Palermo / Colegiales, CABA)
     base_lat = -34.5850
     base_lon = -58.4350
     lat_step = 0.0030  # aprox 330 metros entre esquinas norte-sur
@@ -25,8 +30,8 @@ def build_city_graph():
     nodes = []
     node_coords = {}
 
-    for row in range(4):
-        for col in range(4):
+    for row in range(num_filas):
+        for col in range(num_columnas):
             node_id = f"N_{row}_{col}"
             lat = base_lat - (row * lat_step)
             lon = base_lon + (col * lon_step)
@@ -38,64 +43,125 @@ def build_city_graph():
                 "label": f"Esquina ({row},{col})"
             })
 
+    # Precalcular el tipo/sentido de cada fila y columna con un contador exclusivo de calles
+    dirs_h = []
+    contador_calle_h = 0
+    for r in range(num_filas):
+        if r % paso_avenida == 2:
+            dirs_h.append("AV")
+        else:
+            dirs_h.append("E" if contador_calle_h % 2 == 0 else "O")
+            contador_calle_h += 1
+
+    dirs_v = []
+    contador_calle_v = 0
+    for c in range(num_columnas):
+        if c % paso_avenida == 2:
+            dirs_v.append("AV")
+        else:
+            dirs_v.append("N" if contador_calle_v % 2 == 0 else "S")
+            contador_calle_v += 1
+
     edges = []
     edge_counter = 1
 
-    # Definir aristas dirigidas (calles)
-    # Algunas serán avenidas (más rápidas en condiciones normales, pero más congestionadas en hora pico)
-    for r in range(4):
-        for c in range(4):
+    for r in range(num_filas):
+        for c in range(num_columnas):
             curr_id = f"N_{r}_{c}"
 
-            # Conexión Este-Oeste
-            if c < 3:
+            # 1. Conexiones Horizontales (Este - Oeste)
+            if c < num_columnas - 1:
                 next_id = f"N_{r}_{c+1}"
-                is_avenue = (r == 1 or r == 2)  # Filas 1 y 2 son avenidas
-                # Mano única según paridad o doble mano
-                edges.append({
-                    "tramo_id": f"T_{edge_counter:03d}",
-                    "origen": curr_id,
-                    "destino": next_id,
-                    "distancia_metros": 350,
-                    "tipo": "avenida" if is_avenue else "calle",
-                    "velocidad_base_kmh": 50 if is_avenue else 30
-                })
-                edge_counter += 1
+                tipo_h = dirs_h[r]
 
-                # En sentido contrario (para avenidas doble mano)
-                if is_avenue:
+                if tipo_h == "AV":
+                    # Avenida doble mano (<->)
+                    edges.append({
+                        "tramo_id": f"T_{edge_counter:03d}",
+                        "origen": curr_id,
+                        "destino": next_id,
+                        "distancia_metros": 340,
+                        "tipo": "avenida",
+                        "velocidad_base_kmh": 50
+                    })
+                    edge_counter += 1
+                    edges.append({
+                        "tramo_id": f"T_{edge_counter:03d}",
+                        "origen": next_id,
+                        "destino": curr_id,
+                        "distancia_metros": 340,
+                        "tipo": "avenida",
+                        "velocidad_base_kmh": 50
+                    })
+                    edge_counter += 1
+                elif tipo_h == "E":
+                    # Calle mano única hacia el Este (->)
+                    edges.append({
+                        "tramo_id": f"T_{edge_counter:03d}",
+                        "origen": curr_id,
+                        "destino": next_id,
+                        "distancia_metros": 350,
+                        "tipo": "calle",
+                        "velocidad_base_kmh": 35
+                    })
+                    edge_counter += 1
+                else:
+                    # Calle mano única hacia el Oeste (<-)
                     edges.append({
                         "tramo_id": f"T_{edge_counter:03d}",
                         "origen": next_id,
                         "destino": curr_id,
                         "distancia_metros": 350,
-                        "tipo": "avenida",
-                        "velocidad_base_kmh": 50
+                        "tipo": "calle",
+                        "velocidad_base_kmh": 35
                     })
                     edge_counter += 1
 
-            # Conexión Norte-Sur
-            if r < 3:
+            # 2. Conexiones Verticales (Norte - Sur)
+            if r < num_filas - 1:
                 next_id = f"N_{r+1}_{c}"
-                is_avenue = (c == 1)  # Columna 1 es avenida transversal
-                edges.append({
-                    "tramo_id": f"T_{edge_counter:03d}",
-                    "origen": curr_id,
-                    "destino": next_id,
-                    "distancia_metros": 330,
-                    "tipo": "avenida" if is_avenue else "calle",
-                    "velocidad_base_kmh": 45 if is_avenue else 25
-                })
-                edge_counter += 1
+                tipo_v = dirs_v[c]
 
-                if is_avenue:
+                if tipo_v == "AV":
+                    # Avenida doble mano (^v)
+                    edges.append({
+                        "tramo_id": f"T_{edge_counter:03d}",
+                        "origen": curr_id,
+                        "destino": next_id,
+                        "distancia_metros": 320,
+                        "tipo": "avenida",
+                        "velocidad_base_kmh": 45
+                    })
+                    edge_counter += 1
+                    edges.append({
+                        "tramo_id": f"T_{edge_counter:03d}",
+                        "origen": next_id,
+                        "destino": curr_id,
+                        "distancia_metros": 320,
+                        "tipo": "avenida",
+                        "velocidad_base_kmh": 45
+                    })
+                    edge_counter += 1
+                elif tipo_v == "N":
+                    # Calle mano única hacia el Norte (|^)
                     edges.append({
                         "tramo_id": f"T_{edge_counter:03d}",
                         "origen": next_id,
                         "destino": curr_id,
                         "distancia_metros": 330,
-                        "tipo": "avenida",
-                        "velocidad_base_kmh": 45
+                        "tipo": "calle",
+                        "velocidad_base_kmh": 35
+                    })
+                    edge_counter += 1
+                else:
+                    # Calle mano única hacia el Sur (|v)
+                    edges.append({
+                        "tramo_id": f"T_{edge_counter:03d}",
+                        "origen": curr_id,
+                        "destino": next_id,
+                        "distancia_metros": 330,
+                        "tipo": "calle",
+                        "velocidad_base_kmh": 35
                     })
                     edge_counter += 1
 
@@ -151,18 +217,18 @@ def generate_synthetic_travel_dataset(edges, num_samples_per_edge=400):
 
             if not es_fin_de_semana and not es_feriado:
                 if es_hora_pico_manana:
-                    # Las avenidas se congestionan más que las calles internas
-                    factor_congestion *= 1.8 if tipo == "avenida" else 1.3
+                    # Las avenidas se congestionan mucho más que las calles internas
+                    factor_congestion *= 2.5 if tipo == "avenida" else 1.15
                 elif es_hora_pico_tarde:
-                    factor_congestion *= 2.0 if tipo == "avenida" else 1.4
+                    factor_congestion *= 2.8 if tipo == "avenida" else 1.20
                 elif es_hora_valle_noche:
                     factor_congestion *= 0.85
 
-            # 2. Factor clima
+            # 2. Factor clima (afecta más a las arterias principales)
             if clima == "lluvia":
-                factor_congestion *= 1.25
+                factor_congestion *= 1.35 if tipo == "avenida" else 1.15
             elif clima == "tormenta":
-                factor_congestion *= 1.60
+                factor_congestion *= 1.80 if tipo == "avenida" else 1.30
 
             # 3. Factor feriado / fin de semana
             if es_feriado or es_fin_de_semana:
@@ -213,4 +279,4 @@ def generate_synthetic_travel_dataset(edges, num_samples_per_edge=400):
 
 if __name__ == "__main__":
     tramos = build_city_graph()
-    generate_synthetic_travel_dataset(tramos, num_samples_per_edge=350)
+    generate_synthetic_travel_dataset(tramos, num_samples_per_edge=120)
