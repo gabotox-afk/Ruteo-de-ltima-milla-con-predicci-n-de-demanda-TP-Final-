@@ -122,7 +122,9 @@ class CityGraphRouter:
             tiempos_predichos= self.modelo.predict(df_query)
 
             for (u,v), t_estimado in zip(aristas_lista, tiempos_predichos):
-                self.graph[u][v]["tiempos_segundos"] = max(5.0, float(t_estimado))
+                t_seg = max(5.0, float(t_estimado))
+                self.graph[u][v]["tiempo_segundos"] = t_seg
+                self.graph[u][v]["tiempos_segundos"] = t_seg
 
         else:
             es_fin_de_semana = dia_semana in ["sabado", "domingo"]
@@ -192,6 +194,137 @@ class CityGraphRouter:
             "ahorro_porcentaje": ahorro_porcentaje
         }
 
+    def planificar_ronda_entregas(
+        self,
+        deposito: str,
+        destinos: list,
+        criterio_peso: str = "tiempo_segundos",
+        retornar_al_deposito: bool = False
+    ) -> dict:
+        """
+        Calcula la ronda de entregas óptima a partir de un depósito y una lista de esquinas (clientes)
+        utilizando la heurística voraz del Vecino Más Cercano (Nearest Neighbor) basada en Dijkstra.
+
+        Parámetros:
+            deposito: ID del nodo de inicio/depósito (ej: 'N_0_0').
+            destinos: Lista de esquinas donde entregar paquetes (ej: ['N_0_1', 'N_2_2', 'N_3_1']).
+            criterio_peso: 'tiempo_segundos' (para minimizar tiempo) o 'distancia_metros'.
+            retornar_al_deposito: Si True, incluye el tramo de regreso al depósito al finalizar.
+
+        Retorna:
+            Diccionario con la secuencia ordenada de visita, camino completo continuo y métricas totales.
+        """
+        # Filtrar destinos válidos, únicos y excluir el depósito de la lista de pendientes inicial
+        pendientes = [d for d in dict.fromkeys(destinos) if d != deposito and d in self.graph]
+
+        actual = deposito
+        secuencia_visita = [deposito]
+        camino_completo_nodos = [deposito]
+        etapas = []
+        distancia_total = 0.0
+        tiempo_total = 0.0
+        todos_los_tramos = []
+
+        while pendientes:
+            mejor_candidato = None
+            mejor_ruta = None
+            mejor_costo = float("inf")
+
+            for candidato in pendientes:
+                ruta = self.calcular_ruta_dijkstra(actual, candidato, criterio_peso=criterio_peso)
+                if ruta is not None:
+                    costo = ruta["total_segundos"] if criterio_peso == "tiempo_segundos" else ruta["total_metros"]
+                    if costo < mejor_costo:
+                        mejor_costo = costo
+                        mejor_candidato = candidato
+                        mejor_ruta = ruta
+
+            if mejor_candidato is None:
+                print(f"[AVISO] No se pudo encontrar camino alcanzable desde {actual} hacia {pendientes}")
+                break
+
+            # Registrar la etapa
+            etapas.append({
+                "desde": actual,
+                "hacia": mejor_candidato,
+                "distancia_metros": mejor_ruta["total_metros"],
+                "segundos": mejor_ruta["total_segundos"],
+                "minutos": mejor_ruta["total_minutos"],
+                "tiempo_formateado": mejor_ruta["tiempo_formateado"],
+                "camino_nodos": mejor_ruta["camino_nodos"],
+                "detalle_tramos": mejor_ruta["detalle_tramos"]
+            })
+
+            secuencia_visita.append(mejor_candidato)
+            camino_completo_nodos.extend(mejor_ruta["camino_nodos"][1:])
+            distancia_total += mejor_ruta["total_metros"]
+            tiempo_total += mejor_ruta["total_segundos"]
+            todos_los_tramos.extend(mejor_ruta["detalle_tramos"])
+
+            pendientes.remove(mejor_candidato)
+            actual = mejor_candidato
+
+        # Tramo opcional de regreso al depósito
+        if retornar_al_deposito and actual != deposito:
+            ruta_regreso = self.calcular_ruta_dijkstra(actual, deposito, criterio_peso=criterio_peso)
+            if ruta_regreso is not None:
+                etapas.append({
+                    "desde": actual,
+                    "hacia": deposito,
+                    "distancia_metros": ruta_regreso["total_metros"],
+                    "segundos": ruta_regreso["total_segundos"],
+                    "minutos": ruta_regreso["total_minutos"],
+                    "tiempo_formateado": ruta_regreso["tiempo_formateado"],
+                    "camino_nodos": ruta_regreso["camino_nodos"],
+                    "detalle_tramos": ruta_regreso["detalle_tramos"],
+                    "es_regreso": True
+                })
+                secuencia_visita.append(deposito)
+                camino_completo_nodos.extend(ruta_regreso["camino_nodos"][1:])
+                distancia_total += ruta_regreso["total_metros"]
+                tiempo_total += ruta_regreso["total_segundos"]
+                todos_los_tramos.extend(ruta_regreso["detalle_tramos"])
+
+        return {
+            "deposito": deposito,
+            "destinos_solicitados": destinos,
+            "criterio": criterio_peso,
+            "secuencia_visita": secuencia_visita,
+            "clientes_ordenados": [n for n in secuencia_visita if n != deposito],
+            "camino_completo_nodos": camino_completo_nodos,
+            "total_metros": round(distancia_total, 1),
+            "total_segundos": round(tiempo_total, 1),
+            "total_minutos": round(tiempo_total / 60, 2),
+            "tiempo_formateado": self.formatear_tiempo(tiempo_total),
+            "etapas": etapas,
+            "detalle_tramos": todos_los_tramos
+        }
+
+    # Alias para mayor compatibilidad
+    ordenar_entregas_nearest_neighbor = planificar_ronda_entregas
+    resolver_ronda_entregas = planificar_ronda_entregas
+
+
+def planificar_ronda_entregas(
+    deposito: str,
+    destinos: list,
+    router: CityGraphRouter = None,
+    criterio_peso: str = "tiempo_segundos",
+    retornar_al_deposito: bool = False
+) -> dict:
+    """
+    Función modular para planificar la ronda de entregas con Nearest Neighbor.
+    Crea una instancia de CityGraphRouter si no se proporciona una.
+    """
+    if router is None:
+        router = CityGraphRouter()
+    return router.planificar_ronda_entregas(
+        deposito=deposito,
+        destinos=destinos,
+        criterio_peso=criterio_peso,
+        retornar_al_deposito=retornar_al_deposito
+    )
+
 
 if __name__ == "__main__":
     router = CityGraphRouter()
@@ -220,3 +353,32 @@ if __name__ == "__main__":
     print("-" * 55)
     print(f"cambio la ruta?: {'SÍ' if resultado['caminos_distintos'] else 'NO'}")
     print(f"ahorro de tiempo: {resultado['ahorro_formateado']} minutos ({resultado['ahorro_porcentaje']}%)")
+
+    # Demostración Issue 5: Ronda de entregas (Nearest Neighbor)
+    print("\n" + "=" * 55)
+    print("3. RONDA DE ENTREGAS (Heurística Vecino Más Cercano)")
+    print("=" * 55)
+    deposito_ejemplo = "N_0_0"
+    pedidos_ejemplo = ["N_0_1", "N_2_2", "N_3_1"]
+
+    ronda = router.planificar_ronda_entregas(
+        deposito=deposito_ejemplo,
+        destinos=pedidos_ejemplo,
+        criterio_peso="tiempo_segundos"
+    )
+
+    print(f"Punto de inicio (depósito): {ronda['deposito']}")
+    print(f"Pedidos solicitados:         {ronda['destinos_solicitados']}")
+    print(f"Orden de visita calculado:   {' -> '.join(ronda['secuencia_visita'])}")
+    print(f"Recorrido completo nodos:    {' -> '.join(ronda['camino_completo_nodos'])}")
+    print(f"Distancia total:             {ronda['total_metros']} m")
+    print(f"Tiempo total estimado:       {ronda['tiempo_formateado']} ({ronda['total_minutos']} min)")
+    print("-" * 55)
+    print("Detalle de etapas:")
+    for idx, etapa in enumerate(ronda["etapas"], start=1):
+        print(
+            f"   Etapa {idx}: {etapa['desde']} -> {etapa['hacia']} | "
+            f"{etapa['distancia_metros']} m | {etapa['tiempo_formateado']} min | "
+            f"Nodos: {' -> '.join(etapa['camino_nodos'])}"
+        )
+    print("=" * 55)
