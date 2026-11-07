@@ -237,23 +237,25 @@ export const CityMap: React.FC<CityMapProps> = ({
         <defs>
           <marker
             id="arrowhead-calle"
-            markerWidth="6"
-            markerHeight="6"
-            refX="16"
-            refY="3"
+            markerWidth="13"
+            markerHeight="13"
+            refX="22"
+            refY="6.5"
             orient="auto"
+            markerUnits="userSpaceOnUse"
           >
-            <polygon points="0 0, 6 3, 0 6" fill="#94a3b8" />
+            <polygon points="0 0, 11 6.5, 0 13" fill="#1e293b" />
           </marker>
           <marker
             id="arrowhead-avenida"
-            markerWidth="7"
-            markerHeight="7"
-            refX="18"
-            refY="3.5"
+            markerWidth="13"
+            markerHeight="13"
+            refX="22"
+            refY="6.5"
             orient="auto"
+            markerUnits="userSpaceOnUse"
           >
-            <polygon points="0 0, 7 3.5, 0 7" fill="#64748b" />
+            <polygon points="0 0, 11 6.5, 0 13" fill="#1e293b" />
           </marker>
         </defs>
 
