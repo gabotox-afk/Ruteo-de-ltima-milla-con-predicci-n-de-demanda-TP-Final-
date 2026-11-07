@@ -122,7 +122,7 @@ class CityGraphRouter:
             tiempos_predichos= self.modelo.predict(df_query)
 
             for (u,v), t_estimado in zip(aristas_lista, tiempos_predichos):
-                self.graph[u][v]["tiempos_segundos"] = max(5.0, float(t_estimado))
+                self.graph[u][v]["tiempo_segundos"] = max(5.0, float(t_estimado))
 
         else:
             es_fin_de_semana = dia_semana in ["sabado", "domingo"]
@@ -217,6 +217,7 @@ class CityGraphRouter:
                     if costo < menor_costo:
                         mejor_ruta = ruta
                         mejor_proximo_nodo = candidato
+                        menor_costo = costo
 
             if mejor_proximo_nodo is None:
                 print(f"no hay ruta disponible para los puntos restantes: {pendientes}")
