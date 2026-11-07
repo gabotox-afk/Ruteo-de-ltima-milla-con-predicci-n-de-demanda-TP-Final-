@@ -103,51 +103,30 @@ class CityGraphRouter:
         dia_semana = dia_semana.lower()
         clima = clima.lower()
 
-        if self.modelo is not None:
-            filas_consultas = []
-            aristas_lista = []
+        if self.modelo is None:
+            raise RuntimeError("No se puede actualizar pesos: el modelo de ML no esta cargado.")
 
-            for u, v, datos in self.graph.edges(data=True):
-                filas_consultas.append({
-                    "tramo_id": datos["tramo_id"],
-                    "hora_dia": hora_dia,
-                    "dia_semana": dia_semana,
-                    "clima": clima,
-                    "es_feriado": es_feriado,
-                    "velocidad_promedio_historica": datos["velocidad_base_kmh"] * 0.9
-                })
-                aristas_lista.append((u, v))
+        filas_consultas = []
+        aristas_lista = []
 
-            df_query = pd.DataFrame(filas_consultas)
-            tiempos_predichos= self.modelo.predict(df_query)
+        for u, v, datos in self.graph.edges(data=True):
+            filas_consultas.append({
+                "tramo_id": datos["tramo_id"],
+                "hora_dia": hora_dia,
+                "dia_semana": dia_semana,
+                "clima": clima,
+                "es_feriado": es_feriado,
+                "velocidad_promedio_historica": datos["velocidad_base_kmh"] * 0.9
+            })
+            aristas_lista.append((u, v))
 
-            for (u,v), t_estimado in zip(aristas_lista, tiempos_predichos):
-                self.graph[u][v]["tiempo_segundos"] = max(5.0, float(t_estimado))
+        df_query = pd.DataFrame(filas_consultas)
+        tiempos_predichos= self.modelo.predict(df_query)
 
-        else:
-            es_fin_de_semana = dia_semana in ["sabado", "domingo"]
-            es_hora_pico = (7 <= hora_dia <= 9) or (17 <= hora_dia <= 20)
+        for (u,v), t_estimado in zip(aristas_lista, tiempos_predichos):
+            self.graph[u][v]["tiempo_segundos"] = max(5.0, float(t_estimado))
 
-            for u, v, datos in self.graph.edges(data=True):
-                distancia = datos["distancia_metros"]
-                v_base = datos["velocidad_base_kmh"]
-                tipo = datos["tipo"]
-
-                factor = 1.0
-                if not es_fin_de_semana and not es_feriado:
-                    if es_hora_pico:
-                        factor *= 1.8 if tipo == "avenida" else 1.3
-                    elif 0 <= hora_dia <= 5:
-                        factor *= 0.85
-
-                if clima == "lluvia":
-                    factor *= 1.25
-                elif clima == "tormenta":
-                    factor *= 1.60
-
-                v_efectiva = max(5.0, v_base / factor)
-                tiempo_estimado = distancia / (v_efectiva / 3.6)
-                self.graph[u][v]["tiempo_segundos"] = round(tiempo_estimado, 1)
+        
 
     def comparar_rutas(self, origen = str, destino = str, hora_dia = int, dia_semana = str, clima = str, es_feriado: bool = False):
         ruta_estatica = self.calcular_ruta_dijkstra(origen, destino, criterio_peso= "distancia_metros")
