@@ -192,6 +192,78 @@ class CityGraphRouter:
             "ahorro_porcentaje": ahorro_porcentaje
         }
 
+    def calcular_ronda_entregas(self, origen = str, destinos = list[str], criterio_peso: str="tiempo_segundos", volver_origen: bool = True ):
+        if not destinos:
+            return None
+
+        pendientes = list(destinos)
+        nodo_actual = origen
+
+        orden_visita= [origen]
+        camino_completo= [origen]
+        distancia_total= 0.0
+        tiempo_total = 0.0
+        etapas_viaje = []
+
+        while pendientes:
+            mejor_proximo_nodo = None
+            mejor_ruta = None
+            menor_costo = float("inf")
+
+            for candidato in pendientes:
+                ruta = self.calcular_ruta_dijkstra(nodo_actual, candidato, criterio_peso= criterio_peso)
+                if ruta is not None:
+                    costo = ruta["total_segundos"] if criterio_peso == "tiempo_segundos" else ruta["total_metros"]
+                    if costo < menor_costo:
+                        mejor_ruta = ruta
+                        mejor_proximo_nodo = candidato
+
+            if mejor_proximo_nodo is None:
+                print(f"no hay ruta disponible para los puntos restantes: {pendientes}")
+                break
+
+            pendientes.remove(mejor_proximo_nodo)
+            orden_visita.append(mejor_proximo_nodo)
+            camino_completo.extend(mejor_ruta["camino_nodos"][1:])
+            distancia_total += mejor_ruta["total_metros"]
+            tiempo_total += mejor_ruta["total_segundos"]
+
+            etapas_viaje.append({
+                "desde": nodo_actual,
+                "hasta": mejor_proximo_nodo,
+                "distancia_metros": mejor_ruta["total_metros"],
+                "tiempo_segundos": mejor_ruta["total_segundos"],
+                "tiempo_formateado": mejor_ruta["tiempo_formateado"],
+            })
+
+            nodo_actual = mejor_proximo_nodo
+
+        if volver_origen and nodo_actual != origen:
+            ruta_regreso = self.calcular_ruta_dijkstra(nodo_actual, origen, criterio_peso=criterio_peso)
+            if ruta_regreso is not None:
+                orden_visita.append(origen)
+                camino_completo.extend(ruta_regreso["camino_nodos"][1:])
+                distancia_total += ruta_regreso["total_metros"]
+                tiempo_total += ruta_regreso["total_segundos"]
+                etapas_viaje.append({
+                    "desde": nodo_actual,
+                    "hasta": origen,
+                    "distancia_metros": ruta_regreso["total_metros"],
+                    "tiempo_segundos": ruta_regreso["total_segundos"],
+                    "tiempo_formateado": ruta_regreso["tiempo_formateado"]
+                })
+
+        return {
+            "deposito": origen, 
+            "orden_visitas": orden_visita,
+            "camino_completo_nodos": camino_completo,
+            "distancia_total_metros": round(distancia_total, 1),
+            "tiempo_total_segundos": round(tiempo_total, 1),
+            "tiempo_total_minutos": round(tiempo_total / 60, 2),
+            "tiempo_total_formateado": self.formatear_tiempo(tiempo_total),
+            "etapas_viaje": etapas_viaje
+        }
+
 
 if __name__ == "__main__":
     router = CityGraphRouter()
@@ -220,3 +292,20 @@ if __name__ == "__main__":
     print("-" * 55)
     print(f"cambio la ruta?: {'SÍ' if resultado['caminos_distintos'] else 'NO'}")
     print(f"ahorro de tiempo: {resultado['ahorro_formateado']} minutos ({resultado['ahorro_porcentaje']}%)")
+
+ 
+    pedidos = ["N_0_3", "N_2_2", "N_3_1"]
+    ronda = router.calcular_ronda_entregas(
+        origen="N_0_0",
+        destinos=pedidos,
+        criterio_peso="tiempo_segundos",
+        volver_origen=True
+    )
+
+    print("\n---Ronda de entregas---")
+    print(f"Depósito de salida: {ronda['deposito']}")
+    print(f"Puntos solicitados: {pedidos}")
+    print(f"Orden de entrega óptimo: {' -> '.join(ronda['orden_visitas'])}")
+    print(f"Distancia total recorrida: {ronda['distancia_total_metros']} m")
+    print(f"Tiempo total de la ronda:  {ronda['tiempo_total_formateado']} (MM:SS)")
+
