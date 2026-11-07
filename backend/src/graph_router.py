@@ -10,6 +10,12 @@ GRAPH_PATH = DATA_DIR / "city_graph.json"
 MODEL_PATH = DATA_DIR / "modelo_tiempo_viaje.joblib"
 
 class CityGraphRouter:
+
+    @staticmethod
+    def formatear_tiempo(segundos_totales : float) -> str:
+        minutos, segundos = divmod(int(round(segundos_totales)), 60)
+        return f"{minutos:02d}:{segundos:02d}"
+    
     def __init__(self):
         # hacemos que el grafo sea dirigido por como funcionan las calles
         self.graph = nx.DiGraph()
@@ -90,6 +96,7 @@ class CityGraphRouter:
             "total_metros": round(distancia_total, 1),
             "total_segundos": round(tiempo_total, 1),
             "total_minutos": round(tiempo_total / 60, 2),
+            "tiempo_formateado": self.formatear_tiempo(tiempo_total),
             "detalle_tramos": tramos_recorridos
         }
     def actualizar_pesos(self, hora_dia = int, dia_semana = str, clima = str, es_feriado: bool = False):
@@ -142,27 +149,74 @@ class CityGraphRouter:
                 tiempo_estimado = distancia / (v_efectiva / 3.6)
                 self.graph[u][v]["tiempo_segundos"] = round(tiempo_estimado, 1)
 
+    def comparar_rutas(self, origen = str, destino = str, hora_dia = int, dia_semana = str, clima = str, es_feriado: bool = False):
+        ruta_estatica = self.calcular_ruta_dijkstra(origen, destino, criterio_peso= "distancia_metros")
+        if not ruta_estatica:
+            return None
 
+        self.actualizar_pesos(hora_dia, dia_semana, clima, es_feriado)
+
+        tiempo_real_estatica = 0.0
+        nodos_estatica= ruta_estatica["camino_nodos"]
+        for i in range(len(nodos_estatica) -1 ):
+            u = nodos_estatica[i]
+            v = nodos_estatica[i+1]
+            tiempo_real_estatica += self.graph[u][v]["tiempo_segundos"]
+        
+        ruta_estatica["tiempo_con_trafico_segundos"] = round(tiempo_real_estatica, 1)
+        ruta_estatica["tiempo_con_trafico_minutos"] = round(tiempo_real_estatica / 60, 2)
+        ruta_estatica["tiempo_con_trafico_formateado"] = self.formatear_tiempo(tiempo_real_estatica)
+
+        ruta_dinamica = self.calcular_ruta_dijkstra(origen,destino,criterio_peso= "tiempo_segundos")
+
+        ahorro_segundos = max(0.0, tiempo_real_estatica - ruta_dinamica["total_segundos"])
+        ahorro_minutos = round(ahorro_segundos / 60, 2)
+        ahorro_porcentaje = round((ahorro_segundos / tiempo_real_estatica) * 100, 1) if tiempo_real_estatica > 0 else 0.0
+
+        son_caminos_distintos= ruta_estatica["camino_nodos"] != ruta_dinamica["camino_nodos"]
+
+        return {
+            "contexto": {
+                "hora_dia": hora_dia,
+                "dia_semana": dia_semana,
+                "clima": clima,
+                "es_feriado": es_feriado
+            },
+            "origen": origen,
+            "destino": destino,
+            "caminos_distintos": son_caminos_distintos,
+            "ruta_estatica": ruta_estatica,
+            "ruta_dinamica": ruta_dinamica,
+            "ahorro_minutos": ahorro_minutos,
+            "ahorro_formateado": self.formatear_tiempo(ahorro_segundos),
+            "ahorro_porcentaje": ahorro_porcentaje
+        }
 
 
 if __name__ == "__main__":
     router = CityGraphRouter()
 
-    resultado = router.calcular_ruta_dijkstra("N_0_0", "N_3_3", criterio_peso="distancia_metros")
-    print("\n--- PRUEBA DIJKSTRA (POR DISTANCIA) ---")
-    print("Camino:", " -> ".join(resultado["camino_nodos"]))
-    print(f"Distancia total: {resultado['total_metros']} metros")
-    print(f"Tiempo base: {resultado['total_minutos']} minutos")
 
-    router.actualizar_pesos(hora_dia=18, dia_semana="lunes", clima="tormenta", es_feriado=False)
-    # 3. Ruta Dinámica (Dijkstra buscando menor tiempo con tráfico)
+    resultado = router.comparar_rutas(
+        origen="N_0_0",
+        destino="N_3_3",
+        hora_dia=18,
+        dia_semana="lunes",
+        clima="tormenta",
+        es_feriado=False
+    )
 
-    ruta_dinamica = router.calcular_ruta_dijkstra("N_0_0", "N_3_3", criterio_peso="tiempo_segundos")
-    print("\n--- 2. RUTA DINÁMICA (CON TORMENTA Y HORA PICO) ---")
-    print("Camino:", " -> ".join(ruta_dinamica["camino_nodos"]))
-    print(f"Distancia: {ruta_dinamica['total_metros']} m | Tiempo con tráfico: {ruta_dinamica['total_minutos']} min")
-
-    if resultado["camino_nodos"] != ruta_dinamica["camino_nodos"]:
-        print("\n¡ÉXITO TOTAL! Dijkstra cambió de ruta para esquivar la congestión.")
-    else:
-        print("\nEligió el mismo camino.")
+    print(f"contexto: lunes 18:00 hs con Tormenta , origen: {resultado['origen']} -> Destino: {resultado['destino']}")
+    print("-" * 55)
+    print("1. ruta estatica (GPS convencional sin tráfico):")
+    print("   camino:", " -> ".join(resultado["ruta_estatica"]["camino_nodos"]))
+    print(f"   distancia: {resultado['ruta_estatica']['total_metros']} m")
+    print(f"   tiempo con trafico real: {resultado['ruta_estatica']['tiempo_con_trafico_minutos']} minutos")
+    print("-" * 55)
+    print("2. ruta dinamica (Optimización por Grafo + Predicción):")
+    print("   camino:", " -> ".join(resultado["ruta_dinamica"]["camino_nodos"]))
+    print(f"   distancia: {resultado['ruta_dinamica']['total_metros']} m")
+    print(f"   tiempo optimizado:       {resultado['ruta_dinamica']['total_minutos']} minutos")
+    print("-" * 55)
+    print(f"cambio la ruta?: {'SÍ' if resultado['caminos_distintos'] else 'NO'}")
+    print(f"ahorro de tiempo: {resultado['ahorro_formateado']} minutos ({resultado['ahorro_porcentaje']}%)")
