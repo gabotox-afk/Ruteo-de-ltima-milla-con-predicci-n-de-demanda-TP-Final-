@@ -1,0 +1,22 @@
+{
+  "LinearRegression": {
+    "MAE": 7.7267,
+    "RMSE": 9.862,
+    "R2": 0.6303
+  },
+  "DecisionTreeRegressor": {
+    "MAE": 3.9973,
+    "RMSE": 5.5487,
+    "R2": 0.883
+  },
+  "KNeighborsRegressor": {
+    "MAE": 6.4157,
+    "RMSE": 9.0435,
+    "R2": 0.6891
+  },
+  "RandomForestRegressor": {
+    "MAE": 3.0582,
+    "RMSE": 4.242,
+    "R2": 0.9316
+  }
+}
