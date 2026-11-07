@@ -66,11 +66,9 @@ class CityGraphRouter:
 
 
     def calcular_ruta_dijkstra(self, origen: str, destino: str, criterio_peso: str = "distancia_metros"):
-        try: 
-            camino_nodos= nx.dijkstra_path(self.graph, origen, destino, weight = criterio_peso) 
-        except nx.NetworkXNoPath :
-            print (f"[AVISO] no existe camino entre {origen} y {destino}")
-            return None
+ 
+        camino_nodos= nx.dijkstra_path(self.graph, origen, destino, weight = criterio_peso) 
+
         tramos_recorridos = []
         distancia_total = 0.0
         tiempo_total = 0.0
@@ -130,8 +128,7 @@ class CityGraphRouter:
 
     def comparar_rutas(self, origen = str, destino = str, hora_dia = int, dia_semana = str, clima = str, es_feriado: bool = False):
         ruta_estatica = self.calcular_ruta_dijkstra(origen, destino, criterio_peso= "distancia_metros")
-        if not ruta_estatica:
-            return None
+
 
         self.actualizar_pesos(hora_dia, dia_semana, clima, es_feriado)
 
@@ -191,16 +188,14 @@ class CityGraphRouter:
 
             for candidato in pendientes:
                 ruta = self.calcular_ruta_dijkstra(nodo_actual, candidato, criterio_peso= criterio_peso)
-                if ruta is not None:
-                    costo = ruta["total_segundos"] if criterio_peso == "tiempo_segundos" else ruta["total_metros"]
-                    if costo < menor_costo:
-                        mejor_ruta = ruta
-                        mejor_proximo_nodo = candidato
-                        menor_costo = costo
 
-            if mejor_proximo_nodo is None:
-                print(f"no hay ruta disponible para los puntos restantes: {pendientes}")
-                break
+                costo = ruta["total_segundos"] if criterio_peso == "tiempo_segundos" else ruta["total_metros"]
+                if costo < menor_costo:
+                    mejor_ruta = ruta
+                    mejor_proximo_nodo = candidato
+                    menor_costo = costo
+
+
 
             pendientes.remove(mejor_proximo_nodo)
             orden_visita.append(mejor_proximo_nodo)
@@ -220,18 +215,17 @@ class CityGraphRouter:
 
         if volver_origen and nodo_actual != origen:
             ruta_regreso = self.calcular_ruta_dijkstra(nodo_actual, origen, criterio_peso=criterio_peso)
-            if ruta_regreso is not None:
-                orden_visita.append(origen)
-                camino_completo.extend(ruta_regreso["camino_nodos"][1:])
-                distancia_total += ruta_regreso["total_metros"]
-                tiempo_total += ruta_regreso["total_segundos"]
-                etapas_viaje.append({
-                    "desde": nodo_actual,
-                    "hasta": origen,
-                    "distancia_metros": ruta_regreso["total_metros"],
-                    "tiempo_segundos": ruta_regreso["total_segundos"],
-                    "tiempo_formateado": ruta_regreso["tiempo_formateado"]
-                })
+            orden_visita.append(origen)
+            camino_completo.extend(ruta_regreso["camino_nodos"][1:])
+            distancia_total += ruta_regreso["total_metros"]
+            tiempo_total += ruta_regreso["total_segundos"]
+            etapas_viaje.append({
+                "desde": nodo_actual,
+                "hasta": origen,
+                "distancia_metros": ruta_regreso["total_metros"],
+                "tiempo_segundos": ruta_regreso["total_segundos"],
+                "tiempo_formateado": ruta_regreso["tiempo_formateado"]
+            })
 
         return {
             "deposito": origen, 
