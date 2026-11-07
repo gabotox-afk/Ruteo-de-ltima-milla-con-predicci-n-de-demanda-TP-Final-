@@ -1,10 +1,13 @@
 import json
 from pathlib import Path
 import networkx as nx
+import joblib
+import pandas as pd
 
 # ruta del archivo json con el mapa de la ciudad
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 GRAPH_PATH = DATA_DIR / "city_graph.json"
+MODEL_PATH = DATA_DIR / "modelo_tiempo_viaje.joblib"
 
 class CityGraphRouter:
     def __init__(self):
@@ -13,6 +16,15 @@ class CityGraphRouter:
         self.nodes_info = {}
         self.edges_info = {}
         self.cargar_grafo()
+        self.modelo = None
+        self.cargar_modelo()
+
+    def cargar_modelo(self):
+        if MODEL_PATH.exists():
+            self.modelo = joblib.load(MODEL_PATH)
+            print("modelo de ML encontrado")
+        else:
+            print("modelo no encontrado, se usara simulador matematico")
 
     def cargar_grafo(self):
         with open(GRAPH_PATH, "r", encoding= "utf-8") as f:
@@ -80,6 +92,55 @@ class CityGraphRouter:
             "total_minutos": round(tiempo_total / 60, 2),
             "detalle_tramos": tramos_recorridos
         }
+    def actualizar_pesos(self, hora_dia = int, dia_semana = str, clima = str, es_feriado: bool = False):
+        dia_semana = dia_semana.lower()
+        clima = clima.lower()
+
+        if self.modelo is not None:
+            filas_consultas = []
+            aristas_lista = []
+
+            for u, v, datos in self.graph.edges(data=True):
+                filas_consultas.append({
+                    "tramo_id": datos["tramo_id"],
+                    "hora_dia": hora_dia,
+                    "dia_semana": dia_semana,
+                    "clima": clima,
+                    "es_feriado": es_feriado,
+                    "velocidad_promedio_historica": datos["velocidad_base_kmh"] * 0.9
+                })
+                aristas_lista.append((u, v))
+
+            df_query = pd.DataFrame(filas_consultas)
+            tiempos_predichos= self.modelo.predict(df_query)
+
+            for (u,v), t_estimado in zip(aristas_lista, tiempos_predichos):
+                self.graph[u][v]["tiempos_segundos"] = max(5.0, float(t_estimado))
+
+        else:
+            es_fin_de_semana = dia_semana in ["sabado", "domingo"]
+            es_hora_pico = (7 <= hora_dia <= 9) or (17 <= hora_dia <= 20)
+
+            for u, v, datos in self.graph.edges(data=True):
+                distancia = datos["distancia_metros"]
+                v_base = datos["velocidad_base_kmh"]
+                tipo = datos["tipo"]
+
+                factor = 1.0
+                if not es_fin_de_semana and not es_feriado:
+                    if es_hora_pico:
+                        factor *= 1.8 if tipo == "avenida" else 1.3
+                    elif 0 <= hora_dia <= 5:
+                        factor *= 0.85
+
+                if clima == "lluvia":
+                    factor *= 1.25
+                elif clima == "tormenta":
+                    factor *= 1.60
+
+                v_efectiva = max(5.0, v_base / factor)
+                tiempo_estimado = distancia / (v_efectiva / 3.6)
+                self.graph[u][v]["tiempo_segundos"] = round(tiempo_estimado, 1)
 
 
 
@@ -92,3 +153,16 @@ if __name__ == "__main__":
     print("Camino:", " -> ".join(resultado["camino_nodos"]))
     print(f"Distancia total: {resultado['total_metros']} metros")
     print(f"Tiempo base: {resultado['total_minutos']} minutos")
+
+    router.actualizar_pesos(hora_dia=18, dia_semana="lunes", clima="tormenta", es_feriado=False)
+    # 3. Ruta Dinámica (Dijkstra buscando menor tiempo con tráfico)
+
+    ruta_dinamica = router.calcular_ruta_dijkstra("N_0_0", "N_3_3", criterio_peso="tiempo_segundos")
+    print("\n--- 2. RUTA DINÁMICA (CON TORMENTA Y HORA PICO) ---")
+    print("Camino:", " -> ".join(ruta_dinamica["camino_nodos"]))
+    print(f"Distancia: {ruta_dinamica['total_metros']} m | Tiempo con tráfico: {ruta_dinamica['total_minutos']} min")
+
+    if resultado["camino_nodos"] != ruta_dinamica["camino_nodos"]:
+        print("\n¡ÉXITO TOTAL! Dijkstra cambió de ruta para esquivar la congestión.")
+    else:
+        print("\nEligió el mismo camino.")
